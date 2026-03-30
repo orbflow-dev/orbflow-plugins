@@ -1,0 +1,112 @@
+{
+  "name": "orbflow-ai-judge",
+  "version": "0.2.0",
+  "description": "Score and evaluate content against criteria using an LLM",
+  "author": "Orbflow",
+  "license": "Apache-2.0",
+  "category": "ai",
+  "tags": [
+    "ai",
+    "evaluation",
+    "scoring",
+    "llm"
+  ],
+  "icon": "check-circle",
+  "color": "#F59E0B",
+  "node_types": [
+    "plugin:ai-judge"
+  ],
+  "protocol": {
+    "Grpc": {
+      "default_port": 50051
+    }
+  },
+  "language": "python",
+  "orbflow_version": ">=0.1.0",
+  "inputs": [
+    {
+      "key": "content",
+      "label": "Content",
+      "type": "string",
+      "required": true,
+      "description": "Content to evaluate"
+    },
+    {
+      "key": "criteria",
+      "label": "Criteria",
+      "type": "string",
+      "required": true,
+      "description": "Evaluation criteria or rubric"
+    },
+    {
+      "key": "reference",
+      "label": "Reference",
+      "type": "string",
+      "description": "Reference/expected output for comparison"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "score",
+      "label": "Score",
+      "type": "number",
+      "description": "Numeric score (0-100)"
+    },
+    {
+      "key": "pass",
+      "label": "Pass",
+      "type": "boolean",
+      "description": "Whether score meets threshold"
+    },
+    {
+      "key": "reasoning",
+      "label": "Reasoning",
+      "type": "string"
+    },
+    {
+      "key": "scores",
+      "label": "Detailed Scores",
+      "type": "object",
+      "description": "Per-criterion breakdown"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "type": "string"
+    },
+    {
+      "key": "usage",
+      "label": "Usage",
+      "type": "object"
+    }
+  ],
+  "parameters": [
+    {
+      "key": "model",
+      "label": "Model",
+      "type": "string",
+      "default": "gpt-4o-mini"
+    },
+    {
+      "key": "pass_threshold",
+      "label": "Pass Threshold",
+      "type": "number",
+      "description": "Minimum score to pass (0-100)",
+      "default": 70
+    },
+    {
+      "key": "scale_max",
+      "label": "Scale Max",
+      "type": "number",
+      "default": 100
+    },
+    {
+      "key": "credential_id",
+      "label": "API Credential",
+      "type": "credential",
+      "required": true,
+      "description": "API key credential for the LLM provider",
+      "credential_type": "openai,anthropic,google_ai"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "name": "orbflow-hf-dataset",
+  "version": "0.2.0",
+  "description": "Load rows from HuggingFace Hub datasets via API",
+  "author": "Orbflow",
+  "license": "Apache-2.0",
+  "category": "data-source",
+  "tags": [
+    "huggingface",
+    "dataset",
+    "ml",
+    "ai"
+  ],
+  "icon": "database",
+  "color": "#FFD21E",
+  "node_types": [
+    "plugin:hf-dataset"
+  ],
+  "protocol": {
+    "Grpc": {
+      "default_port": 50051
+    }
+  },
+  "language": "python",
+  "orbflow_version": ">=0.1.0",
+  "inputs": [
+    {
+      "key": "dataset",
+      "label": "Dataset",
+      "type": "string",
+      "required": true,
+      "description": "Dataset ID (e.g. 'squad', 'imdb', 'openai/gsm8k')"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "rows",
+      "label": "Rows",
+      "type": "array",
+      "description": "Array of dataset rows"
+    },
+    {
+      "key": "columns",
+      "label": "Columns",
+      "type": "array",
+      "description": "Column names"
+    },
+    {
+      "key": "total_rows",
+      "label": "Total Rows",
+      "type": "number"
+    },
+    {
+      "key": "dataset_id",
+      "label": "Dataset ID",
+      "type": "string"
+    }
+  ],
+  "parameters": [
+    {
+      "key": "subset",
+      "label": "Subset",
+      "type": "string",
+      "description": "Dataset subset/configuration name"
+    },
+    {
+      "key": "split",
+      "label": "Split",
+      "type": "string",
+      "description": "Dataset split: train, test, validation",
+      "default": "train"
+    },
+    {
+      "key": "offset",
+      "label": "Offset",
+      "type": "number",
+      "description": "Row offset to start from",
+      "default": 0
+    },
+    {
+      "key": "limit",
+      "label": "Limit",
+      "type": "number",
+      "description": "Maximum rows to fetch (1-1000)",
+      "default": 100
+    }
+  ]
+}

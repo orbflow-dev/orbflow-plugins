@@ -1,0 +1,30 @@
+name: Validate Plugins
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate plugins.json
+        run: python -c "import json; json.load(open('plugins.json'))"
+      - name: Validate all manifests
+        run: |
+          find . -name "orbflow-plugin.json" | while read f; do
+            echo "Validating $f"
+            python -c "
+          import json, sys
+          m = json.load(open('$f'))
+          for k in ['name', 'version', 'node_types']:
+              assert k in m, f'Missing required field: {k} in $f'
+          print(f'  OK: {m[\"name\"]} v{m[\"version\"]}')
+          "
+          done
