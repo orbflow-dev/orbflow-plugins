@@ -8,10 +8,8 @@ The Orbflow marketplace reads `plugins.json` from this repository to discover an
 
 ```
 python/
-├── orbflow/              # Official plugins by the Orbflow team
-│   ├── orbflow-uuid-gen/
-│   ├── orbflow-ai-codegen/
-│   └── ...
+├── orbflow/              # Reserved for official Orbflow plugins
+      ...
 ├── unsloth/              # Plugins adapted from Unsloth Studio
 │   ├── unsloth-uuid-gen/
 │   ├── unsloth-ai-codegen/
@@ -29,20 +27,6 @@ Plugins are organized by **language** and **author**. Each plugin is a self-cont
 - `__main__.py` — allows `python -m plugin_name` (Python only)
 
 ## Available Plugins
-
-### Orbflow Official
-
-| Plugin | Category | Description |
-|--------|----------|-------------|
-| [orbflow-uuid-gen](python/orbflow/orbflow-uuid-gen) | utility | Generate UUID v4 identifiers |
-| [orbflow-csv-reader](python/orbflow/orbflow-csv-reader) | data-source | Parse CSV, JSON, and JSONL data |
-| [orbflow-code-validator](python/orbflow/orbflow-code-validator) | validation | Validate code syntax |
-| [orbflow-random-data](python/orbflow/orbflow-random-data) | utility | Generate random test data |
-| [orbflow-schema-transform](python/orbflow/orbflow-schema-transform) | data-processing | Reshape data with field mapping |
-| [orbflow-doc-parser](python/orbflow/orbflow-doc-parser) | data-source | Split text into chunks for RAG |
-| [orbflow-ai-codegen](python/orbflow/orbflow-ai-codegen) | ai | Generate code using an LLM |
-| [orbflow-ai-judge](python/orbflow/orbflow-ai-judge) | ai | Score content using an LLM |
-| [orbflow-hf-dataset](python/orbflow/orbflow-hf-dataset) | data-source | Load HuggingFace Hub datasets |
 
 ### Unsloth
 
