@@ -8,10 +8,14 @@ The Orbflow marketplace reads `plugins.json` from this repository to discover an
 
 ```
 python/
-└── orbflow/              # Official plugins by the Orbflow team
-    ├── orbflow-uuid-gen/
-    ├── orbflow-ai-codegen/
-    └── ...
+├── orbflow/              # Official plugins by the Orbflow team
+│   ├── orbflow-uuid-gen/
+│   ├── orbflow-ai-codegen/
+│   └── ...
+├── unsloth/              # Plugins adapted from Unsloth Studio
+│   ├── unsloth-uuid-gen/
+│   ├── unsloth-ai-codegen/
+│   └── ...
 
 typescript/
 └── orbflow/              # Official TypeScript plugins
@@ -26,17 +30,42 @@ Plugins are organized by **language** and **author**. Each plugin is a self-cont
 
 ## Available Plugins
 
-| Plugin | Category | Language | Description |
-|--------|----------|----------|-------------|
-| [orbflow-uuid-gen](python/orbflow/orbflow-uuid-gen) | utility | Python | Generate UUID v4 identifiers |
-| [orbflow-csv-reader](python/orbflow/orbflow-csv-reader) | data-source | Python | Parse CSV, JSON, and JSONL data |
-| [orbflow-code-validator](python/orbflow/orbflow-code-validator) | validation | Python | Validate code syntax |
-| [orbflow-random-data](python/orbflow/orbflow-random-data) | utility | Python | Generate random test data |
-| [orbflow-schema-transform](python/orbflow/orbflow-schema-transform) | data-processing | Python | Reshape data with field mapping |
-| [orbflow-doc-parser](python/orbflow/orbflow-doc-parser) | data-source | Python | Split text into chunks for RAG |
-| [orbflow-ai-codegen](python/orbflow/orbflow-ai-codegen) | ai | Python | Generate code using an LLM |
-| [orbflow-ai-judge](python/orbflow/orbflow-ai-judge) | ai | Python | Score content using an LLM |
-| [orbflow-hf-dataset](python/orbflow/orbflow-hf-dataset) | data-source | Python | Load HuggingFace Hub datasets |
+### Orbflow Official
+
+| Plugin | Category | Description |
+|--------|----------|-------------|
+| [orbflow-uuid-gen](python/orbflow/orbflow-uuid-gen) | utility | Generate UUID v4 identifiers |
+| [orbflow-csv-reader](python/orbflow/orbflow-csv-reader) | data-source | Parse CSV, JSON, and JSONL data |
+| [orbflow-code-validator](python/orbflow/orbflow-code-validator) | validation | Validate code syntax |
+| [orbflow-random-data](python/orbflow/orbflow-random-data) | utility | Generate random test data |
+| [orbflow-schema-transform](python/orbflow/orbflow-schema-transform) | data-processing | Reshape data with field mapping |
+| [orbflow-doc-parser](python/orbflow/orbflow-doc-parser) | data-source | Split text into chunks for RAG |
+| [orbflow-ai-codegen](python/orbflow/orbflow-ai-codegen) | ai | Generate code using an LLM |
+| [orbflow-ai-judge](python/orbflow/orbflow-ai-judge) | ai | Score content using an LLM |
+| [orbflow-hf-dataset](python/orbflow/orbflow-hf-dataset) | data-source | Load HuggingFace Hub datasets |
+
+### Unsloth
+
+| Plugin | Category | Description |
+|--------|----------|-------------|
+| [unsloth-uuid-gen](python/unsloth/unsloth-uuid-gen) | utility | Generate UUID v4 identifiers |
+| [unsloth-csv-reader](python/unsloth/unsloth-csv-reader) | data-source | Parse CSV, JSON, and JSONL data |
+| [unsloth-code-validator](python/unsloth/unsloth-code-validator) | validation | Validate code syntax |
+| [unsloth-random-data](python/unsloth/unsloth-random-data) | utility | Generate random test data |
+| [unsloth-schema-transform](python/unsloth/unsloth-schema-transform) | data-processing | Reshape data with field mapping |
+| [unsloth-doc-parser](python/unsloth/unsloth-doc-parser) | data-source | Split text into chunks for RAG |
+| [unsloth-ai-codegen](python/unsloth/unsloth-ai-codegen) | ai | Generate code using an LLM |
+| [unsloth-ai-judge](python/unsloth/unsloth-ai-judge) | ai | Score content using an LLM |
+| [unsloth-hf-dataset](python/unsloth/unsloth-hf-dataset) | data-source | Load HuggingFace Hub datasets |
+
+## Plugin SDK
+
+Write your own plugins using the official SDKs:
+
+| SDK | Repository | Package |
+|-----|------------|---------|
+| Python | [orbflow-dev/orbflow-python](https://github.com/orbflow-dev/orbflow-python) | `pip install orbflow-sdk` |
+| TypeScript | [orbflow-dev/orbflow-typescript](https://github.com/orbflow-dev/orbflow-typescript) | `npm install @orbflow/sdk` |
 
 ## Contributing a Plugin
 
@@ -72,6 +101,10 @@ Every plugin must include an `orbflow-plugin.json`:
 
 - **Python** — use [orbflow-sdk](https://github.com/orbflow-dev/orbflow-python) (`pip install orbflow-sdk`)
 - **TypeScript** — use [@orbflow/sdk](https://github.com/orbflow-dev/orbflow-typescript) (`npm install @orbflow/sdk`)
+
+## Acknowledgements
+
+The `unsloth` plugin collection was adapted from [Unsloth Studio](https://unsloth.ai/docs/new/studio)'s Data Recipe nodes. Thanks to the [Unsloth team](https://github.com/unslothai) for their work on open-source local AI training.
 
 ## License
 

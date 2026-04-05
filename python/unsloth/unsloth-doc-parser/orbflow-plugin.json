@@ -1,0 +1,77 @@
+{
+  "name": "unsloth-doc-parser",
+  "version": "0.2.0",
+  "description": "Split text into overlapping chunks for RAG, embeddings, and search",
+  "author": "Unsloth",
+  "license": "Apache-2.0",
+  "category": "data-source",
+  "tags": [
+    "unsloth",
+    "document",
+    "chunking",
+    "rag",
+    "text"
+  ],
+  "icon": "file-text",
+  "color": "#6366F1",
+  "node_types": [
+    "plugin:doc-parser"
+  ],
+  "protocol": {
+    "Grpc": {
+      "default_port": 50051
+    }
+  },
+  "language": "python",
+  "orbflow_version": ">=0.1.0",
+  "inputs": [
+    {
+      "key": "content",
+      "label": "Content",
+      "type": "string",
+      "required": true,
+      "description": "Text content to parse and chunk"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "chunks",
+      "label": "Chunks",
+      "type": "array",
+      "description": "Array of {text, index, char_start, char_end, char_count}"
+    },
+    {
+      "key": "chunk_count",
+      "label": "Chunk Count",
+      "type": "number"
+    },
+    {
+      "key": "total_chars",
+      "label": "Total Characters",
+      "type": "number"
+    }
+  ],
+  "parameters": [
+    {
+      "key": "chunk_size",
+      "label": "Chunk Size",
+      "type": "number",
+      "description": "Target characters per chunk (100-10000)",
+      "default": 1000
+    },
+    {
+      "key": "chunk_overlap",
+      "label": "Overlap",
+      "type": "number",
+      "description": "Overlap characters between chunks (0-chunk_size/2)",
+      "default": 200
+    },
+    {
+      "key": "strategy",
+      "label": "Strategy",
+      "type": "string",
+      "description": "Split strategy: sentences, paragraphs, fixed, recursive",
+      "default": "sentences"
+    }
+  ]
+}

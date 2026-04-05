@@ -1,0 +1,69 @@
+{
+  "name": "unsloth-code-validator",
+  "version": "0.2.0",
+  "description": "Validate code syntax for Python, JavaScript, SQL, and JSON",
+  "author": "Unsloth",
+  "license": "Apache-2.0",
+  "category": "validation",
+  "tags": [
+    "unsloth",
+    "validation",
+    "syntax",
+    "linter"
+  ],
+  "icon": "check-circle",
+  "color": "#22C55E",
+  "node_types": [
+    "plugin:code-validator"
+  ],
+  "protocol": {
+    "Grpc": {
+      "default_port": 50051
+    }
+  },
+  "language": "python",
+  "orbflow_version": ">=0.1.0",
+  "inputs": [
+    {
+      "key": "code",
+      "label": "Code",
+      "type": "string",
+      "required": true,
+      "description": "Source code to validate"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "valid",
+      "label": "Valid",
+      "type": "boolean",
+      "description": "Whether code has no errors"
+    },
+    {
+      "key": "errors",
+      "label": "Errors",
+      "type": "array",
+      "description": "List of error messages"
+    },
+    {
+      "key": "error_count",
+      "label": "Error Count",
+      "type": "number"
+    },
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "string",
+      "description": "Language that was validated"
+    }
+  ],
+  "parameters": [
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "string",
+      "description": "Language to validate: python, javascript, sql, json",
+      "default": "python"
+    }
+  ]
+}

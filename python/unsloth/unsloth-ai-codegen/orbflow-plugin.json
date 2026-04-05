@@ -1,0 +1,108 @@
+{
+  "name": "unsloth-ai-codegen",
+  "version": "0.2.0",
+  "description": "Generate code in any language using an OpenAI-compatible LLM",
+  "author": "Unsloth",
+  "license": "Apache-2.0",
+  "category": "ai",
+  "tags": [
+    "unsloth",
+    "ai",
+    "code",
+    "generation",
+    "llm"
+  ],
+  "icon": "terminal",
+  "color": "#EC4899",
+  "node_types": [
+    "plugin:ai-codegen"
+  ],
+  "protocol": {
+    "Grpc": {
+      "default_port": 50051
+    }
+  },
+  "language": "python",
+  "orbflow_version": ">=0.1.0",
+  "inputs": [
+    {
+      "key": "prompt",
+      "label": "Prompt",
+      "type": "string",
+      "required": true,
+      "description": "Description of the code to generate"
+    },
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "string",
+      "description": "Target programming language",
+      "default": "python"
+    },
+    {
+      "key": "context",
+      "label": "Context",
+      "type": "string",
+      "description": "Additional context (existing code, requirements)"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "code",
+      "label": "Code",
+      "type": "string",
+      "description": "Generated code"
+    },
+    {
+      "key": "explanation",
+      "label": "Explanation",
+      "type": "string"
+    },
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "string"
+    },
+    {
+      "key": "model",
+      "label": "Model",
+      "type": "string",
+      "description": "Model used"
+    },
+    {
+      "key": "usage",
+      "label": "Usage",
+      "type": "object",
+      "description": "Token usage stats"
+    }
+  ],
+  "parameters": [
+    {
+      "key": "model",
+      "label": "Model",
+      "type": "string",
+      "description": "Model name",
+      "default": "gpt-4o-mini"
+    },
+    {
+      "key": "max_tokens",
+      "label": "Max Tokens",
+      "type": "number",
+      "default": 2048
+    },
+    {
+      "key": "temperature",
+      "label": "Temperature",
+      "type": "number",
+      "default": 0.2
+    },
+    {
+      "key": "credential_id",
+      "label": "API Credential",
+      "type": "credential",
+      "required": true,
+      "description": "API key credential for the LLM provider",
+      "credential_type": "openai,anthropic,google_ai"
+    }
+  ]
+}
