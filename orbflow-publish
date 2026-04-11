@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# orbflow-publish — Publish an Orbflow plugin in one command.
+#
+# Usage:
+#   orbflow-publish [OPTIONS]
+#
+# Options:
+#   --tag TAG           Use this tag instead of v{manifest.version}
+#   --index-repo REPO   Central index repo (default: orbflow-dev/orbflow-plugins)
+#   --manifest PATH     Path to orbflow-plugin.json (default: orbflow-plugin.json)
+#   --path PATH         Subdirectory in monorepo (default: empty)
+#   --no-tag            Skip tag creation (tag must already exist)
+#   --dry-run           Show what would happen without making changes
+#   -h, --help          Show this help
+#
+# Prerequisites: git, gh (GitHub CLI, authenticated), jq, curl
+
+INDEX_REPO="orbflow-dev/orbflow-plugins"
+MANIFEST="orbflow-plugin.json"
+PLUGIN_PATH=""
+TAG=""
+NO_TAG=false
+DRY_RUN=false
+
+usage() {
+  sed -n '/^# Usage:/,/^# Prerequisites:/p' "$0" | sed 's/^# \?//'
+}
+
+die() { echo "error: $1" >&2; exit 1; }
+info() { echo "  $1"; }
+
+# --- Parse args ---
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --tag)        TAG="$2"; shift 2 ;;
+    --index-repo) INDEX_REPO="$2"; shift 2 ;;
+    --manifest)   MANIFEST="$2"; shift 2 ;;
+    --path)       PLUGIN_PATH="$2"; shift 2 ;;
+    --no-tag)     NO_TAG=true; shift ;;
+    --dry-run)    DRY_RUN=true; shift ;;
+    -h|--help)    usage; exit 0 ;;
+    *)            die "unknown option: $1" ;;
+  esac
+done
+
+# --- Check prerequisites ---
+missing=()
+for cmd in git gh jq curl; do
+  command -v "$cmd" &>/dev/null || missing+=("$cmd")
+done
+if [[ ${#missing[@]} -gt 0 ]]; then
+  die "missing required tools: ${missing[*]}"
+fi
+
+# sha256 — works on both Linux (sha256sum) and macOS (shasum)
+sha256() {
+  if command -v sha256sum &>/dev/null; then
+    sha256sum "$1" | cut -d' ' -f1
+  else
+    shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+# base64 encode without line wraps — Linux vs macOS
+b64encode() {
+  if base64 --wrap=0 /dev/null &>/dev/null 2>&1; then
+    base64 -w0
+  else
+    base64
+  fi
+}
+
+# --- Validate context ---
+git rev-parse --git-dir &>/dev/null || die "not a git repository"
+[[ -f "$MANIFEST" ]] || die "$MANIFEST not found"
+gh auth status &>/dev/null || die "gh CLI not authenticated — run 'gh auth login' first"
+
+# --- Read manifest ---
+NAME=$(jq -r '.name // empty' "$MANIFEST")
+VERSION=$(jq -r '.version // empty' "$MANIFEST")
+[[ -n "$NAME" ]] || die "manifest missing 'name'"
+[[ -n "$VERSION" ]] || die "manifest missing 'version'"
+
+[[ -z "$TAG" ]] && TAG="v${VERSION}"
+
+# --- Detect GitHub repo ---
+REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null || true)
+if [[ -z "$REPO" ]]; then
+  REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
+  REPO=$(echo "$REMOTE_URL" | sed -E 's|.*github\.com[:/]([^/]+/[^/.]+)(\.git)?$|\1|')
+fi
+[[ -n "$REPO" ]] || die "could not detect GitHub repo from git remote"
+
+echo "Publishing ${NAME} ${TAG}"
+info "Repo:       ${REPO}"
+info "Index:      ${INDEX_REPO}"
+info "Manifest:   ${MANIFEST}"
+[[ -n "$PLUGIN_PATH" ]] && info "Path:       ${PLUGIN_PATH}"
+
+# --- Create and push tag ---
+if [[ "$NO_TAG" == "false" ]]; then
+  if git rev-parse "$TAG" &>/dev/null 2>&1; then
+    info "Tag ${TAG} already exists"
+  else
+    if [[ "$DRY_RUN" == "true" ]]; then
+      info "[dry-run] Would create and push tag ${TAG}"
+    else
+      info "Creating tag ${TAG}..."
+      git tag "$TAG"
+      git push origin "$TAG"
+    fi
+  fi
+fi
+
+# --- Download tarball and compute checksum ---
+info "Computing checksum..."
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+
+HTTP_CODE=$(curl -fsSL -w "%{http_code}" \
+  -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/${REPO}/tarball/${TAG}" \
+  -o "$TMPFILE" 2>/dev/null) || true
+
+if [[ ! -s "$TMPFILE" ]]; then
+  # Retry with GitHub token if available
+  if [[ -n "${GH_TOKEN:-}" ]] || [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    TOKEN="${GH_TOKEN:-${GITHUB_TOKEN}}"
+    curl -fsSL \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/${REPO}/tarball/${TAG}" \
+      -o "$TMPFILE" || die "failed to download tarball for ${TAG}"
+  else
+    die "failed to download tarball for ${TAG} (HTTP ${HTTP_CODE}). Try setting GH_TOKEN."
+  fi
+fi
+
+CHECKSUM=$(sha256 "$TMPFILE")
+info "Checksum:   ${CHECKSUM}"
+
+# --- Build the index entry ---
+ENTRY=$(jq -n \
+  --arg name "$NAME" \
+  --arg version "$VERSION" \
+  --arg description "$(jq -r '.description // ""' "$MANIFEST")" \
+  --arg author "$(jq -r '.author // ""' "$MANIFEST")" \
+  --arg repo "$REPO" \
+  --arg path "$PLUGIN_PATH" \
+  --arg git_ref "$TAG" \
+  --arg checksum "$CHECKSUM" \
+  --arg license "$(jq -r '.license // "MIT"' "$MANIFEST")" \
+  --arg orbflow_version "$(jq -r '.orbflow_version // ">=0.1.0"' "$MANIFEST")" \
+  --arg protocol "$(jq -r 'if .protocol | type == "object" then (if .protocol.binary_name then "subprocess" else "grpc" end) else (.protocol // "subprocess") end' "$MANIFEST")" \
+  --arg language "$(jq -r '.language // ""' "$MANIFEST")" \
+  --arg icon "$(jq -r '.display.icon // .icon // ""' "$MANIFEST")" \
+  --arg category "$(jq -r '.display.category // .category // ""' "$MANIFEST")" \
+  --arg color "$(jq -r '.display.color // .color // ""' "$MANIFEST")" \
+  --argjson node_types "$(jq -c '.node_types // []' "$MANIFEST")" \
+  --argjson tags "$(jq -c '.tags // []' "$MANIFEST")" \
+  '{
+    name: $name,
+    version: $version,
+    description: $description,
+    author: $author,
+    repo: $repo,
+    git_ref: $git_ref,
+    checksum: $checksum,
+    license: $license,
+    orbflow_version: $orbflow_version,
+    protocol: $protocol,
+    language: $language,
+    node_types: $node_types,
+    tags: $tags,
+    downloads: 0
+  }
+  + (if $path != "" then {path: $path} else {} end)
+  + (if $icon != "" then {icon: $icon} else {} end)
+  + (if $category != "" then {category: $category} else {} end)
+  + (if $color != "" then {color: $color} else {} end)')
+
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo ""
+  echo "Entry that would be submitted:"
+  echo "$ENTRY" | jq .
+  echo ""
+  info "[dry-run] Would open PR to ${INDEX_REPO}"
+  exit 0
+fi
+
+# --- Open PR to the index repo via GitHub API (no git clone needed) ---
+info "Opening PR to ${INDEX_REPO}..."
+
+BRANCH="publish/${NAME}/${VERSION}"
+
+# Get default branch and base SHA
+DEFAULT_BRANCH=$(gh api "repos/${INDEX_REPO}" -q '.default_branch')
+BASE_SHA=$(gh api "repos/${INDEX_REPO}/git/ref/heads/${DEFAULT_BRANCH}" -q '.object.sha')
+
+# Create or reset the branch
+gh api "repos/${INDEX_REPO}/git/refs" \
+  -f ref="refs/heads/${BRANCH}" \
+  -f sha="$BASE_SHA" 2>/dev/null || \
+  gh api "repos/${INDEX_REPO}/git/refs/heads/${BRANCH}" \
+    -X PATCH -f sha="$BASE_SHA" -F force=true 2>/dev/null
+
+# Get current plugins.json
+FILE_SHA=$(gh api "repos/${INDEX_REPO}/contents/plugins.json?ref=${DEFAULT_BRANCH}" -q '.sha')
+CURRENT=$(gh api "repos/${INDEX_REPO}/contents/plugins.json?ref=${DEFAULT_BRANCH}" -q '.content' | base64 -d)
+
+# Upsert the entry (preserve downloads count on update)
+UPDATED=$(echo "$CURRENT" | jq --arg name "$NAME" --argjson entry "$ENTRY" '
+  if any(.[]; .name == $name)
+  then [.[] | if .name == $name then $entry + {downloads: .downloads} else . end]
+  else . + [$entry]
+  end')
+
+# Commit via Contents API
+CONTENT_B64=$(echo "$UPDATED" | jq . | b64encode)
+gh api "repos/${INDEX_REPO}/contents/plugins.json" \
+  -X PUT \
+  -f message="publish: ${NAME} v${VERSION}" \
+  -f content="$CONTENT_B64" \
+  -f sha="$FILE_SHA" \
+  -f branch="$BRANCH" > /dev/null
+
+# Create the PR
+PR_URL=$(gh api "repos/${INDEX_REPO}/pulls" \
+  -f title="publish: ${NAME} v${VERSION}" \
+  -f head="$BRANCH" \
+  -f base="$DEFAULT_BRANCH" \
+  -f body="## Auto-publish from [${REPO}](https://github.com/${REPO})
+
+| Field | Value |
+|-------|-------|
+| Plugin | \`${NAME}\` |
+| Version | \`${VERSION}\` |
+| Tag | [\`${TAG}\`](https://github.com/${REPO}/releases/tag/${TAG}) |
+| SHA-256 | \`${CHECKSUM}\` |
+
+<details><summary>Full index entry</summary>
+
+\`\`\`json
+$(echo "$ENTRY" | jq .)
+\`\`\`
+
+</details>
+
+---
+*Generated by \`orbflow-publish\`*" -q '.html_url')
+
+echo ""
+echo "PR created: ${PR_URL}"

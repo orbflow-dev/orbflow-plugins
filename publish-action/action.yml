@@ -1,0 +1,195 @@
+name: "Publish to Orbflow Registry"
+description: "Automatically publish your Orbflow plugin on tag push. Computes checksums and opens a PR to the index repo."
+
+inputs:
+  index-repo:
+    description: "Central index repository (owner/repo)"
+    default: "orbflow-dev/orbflow-plugins"
+    required: false
+  token:
+    description: "GitHub token with write access to the index repo (for creating branches and PRs)"
+    required: true
+  manifest:
+    description: "Path to orbflow-plugin.json relative to repo root"
+    default: "orbflow-plugin.json"
+    required: false
+  path:
+    description: "Subdirectory path within the repo (for monorepos). Leave empty for single-plugin repos."
+    default: ""
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate tag
+      shell: bash
+      run: |
+        TAG="${GITHUB_REF#refs/tags/}"
+        if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          echo "::error::Tag '$TAG' does not match semver pattern vX.Y.Z"
+          exit 1
+        fi
+        echo "TAG=$TAG" >> "$GITHUB_ENV"
+        echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+    - name: Validate manifest
+      shell: bash
+      run: |
+        MANIFEST="${{ inputs.manifest }}"
+        if [[ ! -f "$MANIFEST" ]]; then
+          echo "::error::Manifest not found at $MANIFEST"
+          exit 1
+        fi
+        NAME=$(jq -r '.name // empty' "$MANIFEST")
+        if [[ -z "$NAME" ]]; then
+          echo "::error::Manifest missing required 'name' field"
+          exit 1
+        fi
+        echo "PLUGIN_NAME=$NAME" >> "$GITHUB_ENV"
+
+    - name: Compute tarball checksum
+      shell: bash
+      run: |
+        REPO="${{ github.repository }}"
+        TARBALL=$(mktemp)
+        # Use the API URL — matches what orbflow-registry install.rs downloads
+        HTTP_CODE=$(curl -fsSL -w "%{http_code}" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${REPO}/tarball/${TAG}" \
+          -o "$TARBALL")
+        if [[ "$HTTP_CODE" -ge 400 ]]; then
+          echo "::error::Failed to download tarball (HTTP $HTTP_CODE)"
+          rm -f "$TARBALL"
+          exit 1
+        fi
+        CHECKSUM=$(sha256sum "$TARBALL" | cut -d' ' -f1)
+        rm -f "$TARBALL"
+        echo "CHECKSUM=$CHECKSUM" >> "$GITHUB_ENV"
+        echo "Checksum: $CHECKSUM"
+
+    - name: Build index entry
+      shell: bash
+      run: |
+        MANIFEST="${{ inputs.manifest }}"
+        REPO="${{ github.repository }}"
+        PATH_IN_REPO="${{ inputs.path }}"
+
+        # Extract fields from manifest, handling both flat and nested formats
+        ENTRY=$(jq -n \
+          --arg name "$PLUGIN_NAME" \
+          --arg version "$VERSION" \
+          --arg description "$(jq -r '.description // ""' "$MANIFEST")" \
+          --arg author "$(jq -r '.author // ""' "$MANIFEST")" \
+          --arg repo "$REPO" \
+          --arg path "$PATH_IN_REPO" \
+          --arg git_ref "$TAG" \
+          --arg checksum "$CHECKSUM" \
+          --arg license "$(jq -r '.license // "MIT"' "$MANIFEST")" \
+          --arg orbflow_version "$(jq -r '.orbflow_version // ">=0.1.0"' "$MANIFEST")" \
+          --arg protocol "$(jq -r 'if .protocol | type == "object" then (if .protocol.binary_name then "subprocess" else "grpc" end) else (.protocol // "subprocess") end' "$MANIFEST")" \
+          --arg language "$(jq -r '.language // ""' "$MANIFEST")" \
+          --arg icon "$(jq -r '.display.icon // .icon // ""' "$MANIFEST")" \
+          --arg category "$(jq -r '.display.category // .category // ""' "$MANIFEST")" \
+          --arg color "$(jq -r '.display.color // .color // ""' "$MANIFEST")" \
+          --argjson node_types "$(jq -c '.node_types // []' "$MANIFEST")" \
+          --argjson tags "$(jq -c '.tags // []' "$MANIFEST")" \
+          '{
+            name: $name,
+            version: $version,
+            description: $description,
+            author: $author,
+            repo: $repo,
+            git_ref: $git_ref,
+            checksum: $checksum,
+            license: $license,
+            orbflow_version: $orbflow_version,
+            protocol: $protocol,
+            language: $language,
+            node_types: $node_types,
+            tags: $tags,
+            downloads: 0
+          }
+          + (if $path != "" then {path: $path} else {} end)
+          + (if $icon != "" then {icon: $icon} else {} end)
+          + (if $category != "" then {category: $category} else {} end)
+          + (if $color != "" then {color: $color} else {} end)')
+
+        # Write to temp file for the next step
+        echo "$ENTRY" > /tmp/orbflow-entry.json
+        echo "Generated entry:"
+        echo "$ENTRY" | jq .
+
+    - name: Open PR to index repo
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        INDEX_REPO="${{ inputs.index-repo }}"
+        ENTRY=$(cat /tmp/orbflow-entry.json)
+        REPO="${{ github.repository }}"
+        BRANCH="publish/${PLUGIN_NAME}/${VERSION}"
+
+        # Get default branch and its SHA
+        DEFAULT_BRANCH=$(gh api "repos/${INDEX_REPO}" -q '.default_branch')
+        BASE_SHA=$(gh api "repos/${INDEX_REPO}/git/ref/heads/${DEFAULT_BRANCH}" -q '.object.sha')
+
+        # Create branch via API
+        gh api "repos/${INDEX_REPO}/git/refs" \
+          -f ref="refs/heads/${BRANCH}" \
+          -f sha="$BASE_SHA" 2>/dev/null || {
+            echo "::warning::Branch ${BRANCH} already exists, updating..."
+            gh api "repos/${INDEX_REPO}/git/refs/heads/${BRANCH}" \
+              -X PATCH -f sha="$BASE_SHA" -F force=true
+          }
+
+        # Get current plugins.json content and SHA
+        FILE_SHA=$(gh api "repos/${INDEX_REPO}/contents/plugins.json?ref=${DEFAULT_BRANCH}" -q '.sha')
+        CURRENT=$(gh api "repos/${INDEX_REPO}/contents/plugins.json?ref=${DEFAULT_BRANCH}" -q '.content' | base64 -d)
+
+        # Update or insert the entry
+        UPDATED=$(echo "$CURRENT" | jq --arg name "$PLUGIN_NAME" --argjson entry "$ENTRY" '
+          if any(.[]; .name == $name)
+          then [.[] | if .name == $name then $entry + {downloads: .downloads} else . end]
+          else . + [$entry]
+          end')
+
+        # Commit the update via API (no git clone needed)
+        CONTENT_B64=$(echo "$UPDATED" | jq . | base64 -w0)
+        gh api "repos/${INDEX_REPO}/contents/plugins.json" \
+          -X PUT \
+          -f message="publish: ${PLUGIN_NAME} v${VERSION}" \
+          -f content="$CONTENT_B64" \
+          -f sha="$FILE_SHA" \
+          -f branch="$BRANCH"
+
+        # Create the PR
+        PR_URL=$(gh api "repos/${INDEX_REPO}/pulls" \
+          -f title="publish: ${PLUGIN_NAME} v${VERSION}" \
+          -f head="$BRANCH" \
+          -f base="$DEFAULT_BRANCH" \
+          -f body="$(cat <<EOF
+        ## Auto-publish from [${REPO}](https://github.com/${REPO})
+
+        | Field | Value |
+        |-------|-------|
+        | Plugin | \`${PLUGIN_NAME}\` |
+        | Version | \`${VERSION}\` |
+        | Tag | [\`${TAG}\`](https://github.com/${REPO}/releases/tag/${TAG}) |
+        | SHA-256 | \`${CHECKSUM}\` |
+
+        <details><summary>Full index entry</summary>
+
+        \`\`\`json
+        $(echo "$ENTRY" | jq .)
+        \`\`\`
+
+        </details>
+
+        ---
+        *Auto-generated by [orbflow-publish-action](https://github.com/orbflow-dev/publish-plugin-action)*
+        EOF
+        )" -q '.html_url')
+
+        echo "::notice::PR created: $PR_URL"
+        echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
+        rm -f /tmp/orbflow-entry.json

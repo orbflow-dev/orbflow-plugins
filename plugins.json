@@ -11,7 +11,9 @@
     "node_types": ["plugin:uuid-gen"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-uuid-gen"
+    "path": "python/unsloth/unsloth-uuid-gen",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-csv-reader",
@@ -25,7 +27,9 @@
     "node_types": ["plugin:csv-reader"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-csv-reader"
+    "path": "python/unsloth/unsloth-csv-reader",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-code-validator",
@@ -39,7 +43,9 @@
     "node_types": ["plugin:code-validator"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-code-validator"
+    "path": "python/unsloth/unsloth-code-validator",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-random-data",
@@ -53,7 +59,9 @@
     "node_types": ["plugin:random-data"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-random-data"
+    "path": "python/unsloth/unsloth-random-data",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-schema-transform",
@@ -67,7 +75,9 @@
     "node_types": ["plugin:schema-transform"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-schema-transform"
+    "path": "python/unsloth/unsloth-schema-transform",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-doc-parser",
@@ -81,7 +91,9 @@
     "node_types": ["plugin:doc-parser"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-doc-parser"
+    "path": "python/unsloth/unsloth-doc-parser",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-ai-codegen",
@@ -95,7 +107,9 @@
     "node_types": ["plugin:ai-codegen"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-ai-codegen"
+    "path": "python/unsloth/unsloth-ai-codegen",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-ai-judge",
@@ -109,7 +123,9 @@
     "node_types": ["plugin:ai-judge"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-ai-judge"
+    "path": "python/unsloth/unsloth-ai-judge",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   },
   {
     "name": "unsloth-hf-dataset",
@@ -123,6 +139,8 @@
     "node_types": ["plugin:hf-dataset"],
     "protocol": "grpc",
     "language": "python",
-    "path": "python/unsloth/unsloth-hf-dataset"
+    "path": "python/unsloth/unsloth-hf-dataset",
+    "git_ref": "4f4a04376e9878767fed6c1f4643e16c6a5718b3",
+    "checksum": "6db812b8914b4007cc870c7311d73b61022b7f497e1981758b86906f80bd878c"
   }
 ]

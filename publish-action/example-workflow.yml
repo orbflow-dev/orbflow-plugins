@@ -1,0 +1,38 @@
+# Copy this file to your plugin repo at .github/workflows/publish.yml
+#
+# After setup, publishing is just:
+#   git tag v1.0.0
+#   git push origin v1.0.0
+#
+# The action will:
+#   1. Download the tarball for the tag
+#   2. Compute the SHA-256 checksum
+#   3. Read your orbflow-plugin.json manifest
+#   4. Open a PR to the community registry with the new entry
+
+name: Publish to Orbflow Registry
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: orbflow-dev/publish-plugin-action@v1
+        with:
+          # Token with write access to the index repo.
+          # Ask the Orbflow team for an org-level publish token,
+          # or use a PAT with 'repo' scope on orbflow-dev/orbflow-plugins.
+          token: ${{ secrets.ORBFLOW_PUBLISH_TOKEN }}
+
+          # Defaults — override if needed:
+          # index-repo: orbflow-dev/orbflow-plugins
+          # manifest: orbflow-plugin.json
+          # path: ""  # set to subdirectory for monorepos (e.g., "python/my-plugin")
